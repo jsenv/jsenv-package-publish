@@ -17,7 +17,7 @@ export const publish = async ({ logger, projectDirectoryUrl, registryUrl, token 
     writeFileSync(projectPackageFilePath, projectPackageString)
   }
 
-  const projectNpmConfigFileUrl = resolveUrl("./npmrc", projectDirectoryUrl)
+  const projectNpmConfigFileUrl = resolveUrl("./.npmrc", projectDirectoryUrl)
   const projectNpmConfigFilePath = urlToFilePath(projectNpmConfigFileUrl)
   let projectNpmConfigString
   try {
