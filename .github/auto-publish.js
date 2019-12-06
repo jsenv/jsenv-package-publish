@@ -1,8 +1,9 @@
+const { fileURLToPath } = require("url")
 const { autoPublish } = require("@jsenv/auto-publish")
 const { projectPath } = require("../jsenv.config.js")
 
 autoPublish({
-  projectPath,
+  projectPath: fileURLToPath(projectDirectoryUrl),
   registryMap: {
     "https://registry.npmjs.org": {
       token: process.env.NPM_TOKEN,
