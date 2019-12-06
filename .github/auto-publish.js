@@ -1,6 +1,6 @@
 const { fileURLToPath } = require("url")
 const { autoPublish } = require("@jsenv/auto-publish")
-const { projectPath } = require("../jsenv.config.js")
+const { projectDirectoryUrl } = require("../jsenv.config.js")
 
 autoPublish({
   projectPath: fileURLToPath(projectDirectoryUrl),
