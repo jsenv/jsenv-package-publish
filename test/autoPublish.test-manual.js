@@ -1,14 +1,14 @@
-import { autoPublish } from "../../index.js"
+import { publishPackage } from "../index.js"
 // import secrets from "../../secrets.json"
 
 // Object.assign(process.env, secrets)
 
-const { projectPath } = import.meta.require("../../jsenv.config.js")
+const { projectDirectoryUrl } = import.meta.require("../../jsenv.config.js")
 
-autoPublish({
-  projectPath,
+publishPackage({
+  projectDirectoryUrl,
   logLevel: "info",
-  registryMap: {
+  registriesConfig: {
     "https://registry.npmjs.org": {
       token: process.env.NPM_TOKEN,
     },

@@ -1,11 +1,11 @@
-# Continuous package publish
+# Package publish
 
-[![github package](https://img.shields.io/github/package-json/v/jsenv/jsenv-auto-publish.svg?logo=github&label=package)](https://github.com/jsenv/jsenv-auto-publish/packages)
-[![npm package](https://img.shields.io/npm/v/@jsenv/auto-publish.svg?logo=npm&label=package)](https://www.npmjs.com/package/@jsenv/auto-publish)
-[![github ci](https://github.com/jsenv/jsenv-auto-publish/workflows/ci/badge.svg)](https://github.com/jsenv/jsenv-auto-publish/actions?workflow=ci)
-[![codecov coverage](https://codecov.io/gh/jsenv/jsenv-auto-publish/branch/master/graph/badge.svg)](https://codecov.io/gh/jsenv/jsenv-auto-publish)
+[![github package](https://img.shields.io/github/package-json/v/jsenv/jsenv-package-publish.svg?logo=github&label=package)](https://github.com/jsenv/jsenv-package-publish/packages)
+[![npm package](https://img.shields.io/npm/v/@jsenv/package-publish.svg?logo=npm&label=package)](https://www.npmjs.com/package/@jsenv/package-publish)
+[![github ci](https://github.com/jsenv/jsenv-package-publish/workflows/ci/badge.svg)](https://github.com/jsenv/jsenv-package-publish/actions?workflow=ci)
+[![codecov coverage](https://codecov.io/gh/jsenv/jsenv-package-publish/branch/master/graph/badge.svg)](https://codecov.io/gh/jsenv/jsenv-package-publish)
 
-Auto publish your package to npm and github registry whenever package.json version changes on master.
+Publish package to one or many registry. Can be used to publish on both npm and github registries for instance.
 
 ## Table of contents
 
@@ -15,7 +15,7 @@ Auto publish your package to npm and github registry whenever package.json versi
 
 ## Presentation
 
-This github repository corresponds to `@jsenv/continuous-package-publish` package published on github and npm package registries.
+This github repository corresponds to `@jsenv/package-publish` package published on github and npm package registries.
 
 TODO: one more sentence to explain why it exists and what it does
 

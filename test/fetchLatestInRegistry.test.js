@@ -1,5 +1,5 @@
-import { assert } from "@dmail/assert"
-import { fetchLatestInRegistry } from "../../src/autoPublish/fetchLatestInRegistry.js"
+import { assert } from "@jsenv/assert"
+import { fetchLatestInRegistry } from "../src/internal/fetchLatestInRegistry.js"
 
 {
   const { name: actual } = await fetchLatestInRegistry({

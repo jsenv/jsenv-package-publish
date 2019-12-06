@@ -1,5 +1,5 @@
-import { assert } from "@dmail/assert"
-import { setNpmConfig } from "../../src/autoPublish/setNpmConfig.js"
+import { assert } from "@jsenv/assert"
+import { setNpmConfig } from "../src/internal/setNpmConfig.js"
 
 {
   const actual = setNpmConfig("", { whatever: 42 })

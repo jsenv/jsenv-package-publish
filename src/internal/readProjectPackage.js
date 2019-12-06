@@ -1,24 +1,14 @@
 import { readFile } from "fs"
-import {
-  operatingSystemPathToPathname,
-  pathnameToOperatingSystemPath,
-} from "@jsenv/operating-system-path"
+import { resolveUrl, urlToFilePath } from "./urlUtils.js"
 
-export const readProjectPackage = async ({ projectPath }) => {
-  if (typeof projectPath !== "string") {
-    throw new Error(`projectPath must be a string.
---- project path ---
-${projectPath}`)
-  }
-
-  const projectPathname = operatingSystemPathToPathname(projectPath)
-  const packagePathname = `${projectPathname}/package.json`
-  const packagePath = pathnameToOperatingSystemPath(packagePathname)
+export const readProjectPackage = async ({ projectDirectoryUrl }) => {
+  const packageFileUrl = resolveUrl("./package.json", projectDirectoryUrl)
+  const packageFilePath = urlToFilePath(packageFileUrl)
 
   let packageInProject
   try {
     const packageBuffer = await new Promise((resolve, reject) => {
-      readFile(packagePath, (error, buffer) => {
+      readFile(packageFilePath, (error, buffer) => {
         if (error) {
           reject(error)
         } else {
@@ -35,7 +25,7 @@ ${projectPath}`)
 --- syntax error stack ---
 ${e.stack}
 --- package.json path ---
-${packagePath}`)
+${packageFilePath}`)
       }
       throw e
     }
@@ -44,7 +34,7 @@ ${packagePath}`)
       throw new Error(
         `cannot find project package.json
 --- package.json path ---
-${packagePath}`,
+${packageFilePath}`,
       )
     }
     throw e

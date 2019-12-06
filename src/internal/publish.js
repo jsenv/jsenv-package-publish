@@ -1,28 +1,24 @@
 import { readFileSync, writeFileSync } from "fs"
 import { exec } from "child_process"
-import {
-  operatingSystemPathToPathname,
-  pathnameToOperatingSystemPath,
-} from "@jsenv/operating-system-path"
 import { setNpmConfig } from "./setNpmConfig.js"
+import { resolveUrl, urlToFilePath } from "./urlUtils.js"
 
-export const publish = async ({ projectPath, registryUrl, token, logger }) => {
-  const projectPathname = operatingSystemPathToPathname(projectPath)
-
+export const publish = async ({ logger, projectDirectoryUrl, registryUrl, token }) => {
   const previousValue = process.env.NODE_AUTH_TOKEN
   const restoreProcessEnv = () => {
     process.env.NODE_AUTH_TOKEN = previousValue
   }
 
-  const projectPackageFilePathname = `${projectPathname}/package.json`
-  const projectPackageFilePath = pathnameToOperatingSystemPath(projectPackageFilePathname)
+  const projectPackageFileUrl = resolveUrl("./package.json", projectDirectoryUrl)
+  const projectPackageFilePath = urlToFilePath(projectPackageFileUrl)
+
   const projectPackageString = String(readFileSync(projectPackageFilePath))
   const restoreProjectPackageFile = () => {
     writeFileSync(projectPackageFilePath, projectPackageString)
   }
 
-  const projectNpmConfigFilePathname = `${projectPathname}/.npmrc`
-  const projectNpmConfigFilePath = pathnameToOperatingSystemPath(projectNpmConfigFilePathname)
+  const projectNpmConfigFileUrl = resolveUrl("./npmrc", projectDirectoryUrl)
+  const projectNpmConfigFilePath = urlToFilePath(projectNpmConfigFileUrl)
   let projectNpmConfigString
   try {
     projectNpmConfigString = String(readFileSync(projectNpmConfigFilePath))
@@ -57,7 +53,7 @@ export const publish = async ({ projectPath, registryUrl, token, logger }) => {
       const command = exec(
         "npm publish",
         {
-          cwd: projectPath,
+          cwd: urlToFilePath(projectDirectoryUrl),
           stdio: "silent",
         },
         (error) => {
