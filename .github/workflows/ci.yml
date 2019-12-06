@@ -42,7 +42,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: create github release
+      - name: ensure github release
         if: github.event_name == 'push'
         run: node ./.github/ensure-github-release-for-package.js
         env:
