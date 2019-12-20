@@ -1,5 +1,5 @@
 import { readFile } from "fs"
-import { resolveUrl, urlToFilePath } from "./urlUtils.js"
+import { resolveUrl, urlToFilePath } from "@jsenv/util"
 
 export const readProjectPackage = async ({ projectDirectoryUrl }) => {
   const packageFileUrl = resolveUrl("./package.json", projectDirectoryUrl)

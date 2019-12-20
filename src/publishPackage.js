@@ -1,5 +1,5 @@
 import { createLogger } from "@jsenv/logger"
-import { hasScheme, filePathToUrl } from "./internal/urlUtils.js"
+import { assertAndNormalizeDirectoryUrl } from "@jsenv/util"
 import { fetchLatestInRegistry } from "./internal/fetchLatestInRegistry.js"
 import { publish } from "./internal/publish.js"
 import { readProjectPackage } from "./internal/readProjectPackage.js"
@@ -14,7 +14,7 @@ export const publishPackage = async ({ projectDirectoryUrl, logLevel, registries
         "  ",
       )})`,
     )
-    projectDirectoryUrl = normalizeProjectDirectoryUrl(projectDirectoryUrl)
+    projectDirectoryUrl = assertAndNormalizeDirectoryUrl(projectDirectoryUrl)
     assertRegistriesConfig(registriesConfig)
 
     logger.debug(`reading project package.json`)
@@ -79,28 +79,6 @@ export const publishPackage = async ({ projectDirectoryUrl, logLevel, registries
     process.exitCode = 1
     throw e
   }
-}
-
-const normalizeProjectDirectoryUrl = (value) => {
-  if (value instanceof URL) {
-    value = value.href
-  }
-
-  if (typeof value === "string") {
-    const url = hasScheme(value) ? value : filePathToUrl(value)
-
-    if (!url.startsWith("file://")) {
-      throw new Error(`projectDirectoryUrl must starts with file://, received ${value}`)
-    }
-
-    return ensureTrailingSlash(value)
-  }
-
-  throw new TypeError(`projectDirectoryUrl must be a string or an url, received ${value}`)
-}
-
-const ensureTrailingSlash = (string) => {
-  return string.endsWith("/") ? string : `${string}/`
 }
 
 const assertRegistriesConfig = (value) => {
