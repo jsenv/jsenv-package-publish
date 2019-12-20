@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs"
 import { exec } from "child_process"
+import { resolveUrl, urlToFilePath } from "@jsenv/util"
 import { setNpmConfig } from "./setNpmConfig.js"
-import { resolveUrl, urlToFilePath } from "./urlUtils.js"
 
 export const publish = async ({ logger, projectDirectoryUrl, registryUrl, token }) => {
   const previousValue = process.env.NODE_AUTH_TOKEN

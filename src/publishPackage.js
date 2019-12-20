@@ -1,5 +1,5 @@
 import { createLogger } from "@jsenv/logger"
-import { hasScheme, filePathToUrl } from "./internal/urlUtils.js"
+import { hasScheme, filePathToUrl } from "@jsenv/util"
 import { fetchLatestInRegistry } from "./internal/fetchLatestInRegistry.js"
 import { publish } from "./internal/publish.js"
 import { readProjectPackage } from "./internal/readProjectPackage.js"
