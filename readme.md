@@ -22,11 +22,10 @@ Publish package to one or many registry. Can be used to publish on both npm and 
 
 This github repository corresponds to `@jsenv/package-publish` package published on github and npm package registries.
 
-TODO: one more sentence to explain why it exists and what it does
+This package is meant to automate `npm publish` at the end of your continuous workflow. It also facilitates your life when you want to publish to more than one package registry.
 
 ## Usage
 
-This package is meant to automate `npm publish` at the end of your continuous workflow.<br />
 You can use it inside a github workflow or inside any other continuous environment like Travis or Jenkins.
 
 The following screenshot illustrates how this package can be integrated in a github workflow.
