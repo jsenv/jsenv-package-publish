@@ -6,7 +6,13 @@ export const loadEnvFile = async (url) => {
     Object.assign(process.env, data.default)
     return true
   } catch (e) {
-    if (e.code === "MODULE_NOT_FOUND") {
+    if (
+      e.code === "MODULE_NOT_FOUND" ||
+      // ENOENT is what jsenv throw for dynamic import not found
+      // ideally it should be updated (in the case of node.js)
+      // to trigger module not found error as node 13.6 does
+      e.code === "ENOENT"
+    ) {
       throw new Error(`missing env file at ${urlToFileSystemPath(url)}`)
     }
 
