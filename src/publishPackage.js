@@ -1,13 +1,16 @@
-import { createRequire } from "module"
 import { createLogger } from "@jsenv/logger"
 import { assertAndNormalizeDirectoryUrl } from "@jsenv/util"
 import { fetchLatestInRegistry } from "./internal/fetchLatestInRegistry.js"
 import { publish } from "./internal/publish.js"
 import { readProjectPackage } from "./internal/readProjectPackage.js"
-
-const require = createRequire(import.meta.url)
-// https://github.com/npm/node-semver#readme
-const { gt: versionGreaterThan } = require("semver")
+import {
+  needsPublish,
+  PUBLISH_BECAUSE_NEVER_PUBLISHED,
+  PUBLISH_BECAUSE_LATEST_LOWER,
+  PUBLISH_BECAUSE_TAG_DIFFERS,
+  NOTHING_BECAUSE_LATEST_HIGHER,
+  NOTHING_BECAUSE_ALREADY_PUBLISHED,
+} from "../src/internal/needsPublish.js"
 
 export const publishPackage = async ({
   projectDirectoryUrl,
@@ -49,11 +52,6 @@ export const publishPackage = async ({
       logger.debug(`check latest version for ${packageName} in ${registryUrl}`)
       const registryConfig = registriesConfig[registryUrl]
 
-      const decide = (action, actionReason) => {
-        registryReport.action = action
-        registryReport.actionReason = actionReason
-      }
-
       try {
         const latestPackageInRegistry = await fetchLatestInRegistry({
           registryUrl,
@@ -64,30 +62,39 @@ export const publishPackage = async ({
           latestPackageInRegistry === null ? null : latestPackageInRegistry.version
         registryReport.registryLatestVersion = registryLatestVersion
 
-        if (registryLatestVersion === null) {
-          logger.debug(
+        const needs = needsPublish({ packageVersion, registryLatestVersion })
+        registryReport.actionReason = needs
+
+        if (needs === PUBLISH_BECAUSE_NEVER_PUBLISHED) {
+          logger.info(
             `${packageName}@${packageVersion} needs to be published on ${registryUrl} because it was never published`,
           )
-          decide("needs-publish", "never-published")
-        } else if (registryLatestVersion === packageVersion) {
+          registryReport.action = "publish"
+        } else if (needs === PUBLISH_BECAUSE_LATEST_LOWER) {
+          logger.info(
+            `${packageName}@${packageVersion} needs to be published on ${registryUrl} because latest version is lower (${registryLatestVersion})`,
+          )
+          registryReport.action = "publish"
+        } else if (needs === PUBLISH_BECAUSE_TAG_DIFFERS) {
+          logger.info(
+            `${packageName}@${packageVersion} needs to be published on ${registryUrl} because latest tag differs (${registryLatestVersion})`,
+          )
+          registryReport.action = "publish"
+        } else if (needs === NOTHING_BECAUSE_ALREADY_PUBLISHED) {
           logger.info(
             `skip ${packageName}@${packageVersion} publish on ${registryUrl} because already published`,
           )
-          decide("nothing", "already-published")
-        } else if (versionGreaterThan(registryLatestVersion, packageVersion)) {
+          registryReport.action = "nothing"
+        } else if (needs === NOTHING_BECAUSE_LATEST_HIGHER) {
           logger.info(
             `skip ${packageName}@${packageVersion} publish on ${registryUrl} because latest version is higher (${registryLatestVersion})`,
           )
-          decide("nothing", "latest-higher")
-        } else {
-          logger.debug(
-            `${packageName}@${packageVersion} needs to be published on ${registryUrl} because latest version is lower (${registryLatestVersion})`,
-          )
-          decide("needs-publish", "latest-lower")
+          registryReport.action = "nothing"
         }
       } catch (e) {
         logger.error(e.message)
-        decide("nothing", e)
+        registryReport.action = "nothing"
+        registryReport.actionReason = e
         process.exitCode = 1
       }
     }),
@@ -99,7 +106,7 @@ export const publishPackage = async ({
     await previous
 
     const registryReport = report[registryUrl]
-    if (registryReport.action !== "needs-publish") {
+    if (registryReport.action !== "publish") {
       registryReport.actionResult = { success: true, reason: "nothing-to-do" }
       return
     }

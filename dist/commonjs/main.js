@@ -2,12 +2,12 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var module$1 = require('module');
 var url$1 = require('url');
 var fs = require('fs');
 var crypto = require('crypto');
 var path = require('path');
 var util = require('util');
+var module$1 = require('module');
 require('net');
 require('http');
 require('https');
@@ -83,11 +83,6 @@ function ownKeys(object, enumerableOnly) {
 
   return keys;
 }
-
-// eslint-disable-next-line import/no-unresolved
-var nodeRequire = require;
-var filenameContainsBackSlashes = __filename.indexOf("\\") > -1;
-var url = filenameContainsBackSlashes ? "file:///".concat(__filename.replace(/\\/g, "/")) : "file://".concat(__filename);
 
 var LOG_LEVEL_OFF = "off";
 var LOG_LEVEL_DEBUG = "debug";
@@ -970,6 +965,11 @@ var isErrorWithCode = function isErrorWithCode(error, code) {
 if ("observable" in Symbol === false) {
   Symbol.observable = Symbol.for("observable");
 }
+
+// eslint-disable-next-line import/no-unresolved
+var nodeRequire = require;
+var filenameContainsBackSlashes = __filename.indexOf("\\") > -1;
+var url = filenameContainsBackSlashes ? "file:///".concat(__filename.replace(/\\/g, "/")) : "file://".concat(__filename);
 
 var createCancellationToken = function createCancellationToken() {
   var register = function register(callback) {
@@ -1858,6 +1858,130 @@ var readProjectPackage = _async$b(function (_ref) {
   });
 });
 
+// eslint-disable-next-line consistent-return
+var arrayWithHoles = (function (arr) {
+  if (Array.isArray(arr)) return arr;
+});
+
+var iterableToArrayLimit = (function (arr, i) {
+  // this is an expanded form of \`for...of\` that properly supports abrupt completions of
+  // iterators etc. variable names have been minimised to reduce the size of this massive
+  // helper. sometimes spec compliance is annoying :(
+  //
+  // _n = _iteratorNormalCompletion
+  // _d = _didIteratorError
+  // _e = _iteratorError
+  // _i = _iterator
+  // _s = _step
+  if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+    return;
+  }
+
+  var _arr = [];
+  var _n = true;
+  var _d = false;
+
+  var _e;
+
+  var _i = arr[Symbol.iterator]();
+
+  var _s;
+
+  try {
+    for (; !(_n = (_s = _i.next()).done); _n = true) {
+      _arr.push(_s.value);
+
+      if (i && _arr.length === i) break;
+    }
+  } catch (err) {
+    _d = true;
+    _e = err;
+  } finally {
+    try {
+      if (!_n && _i.return !== null) _i.return();
+    } finally {
+      if (_d) throw _e;
+    }
+  } // eslint-disable-next-line consistent-return
+
+
+  return _arr;
+});
+
+var nonIterableRest = (function () {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+});
+
+var _slicedToArray = (function (arr, i) {
+  return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || nonIterableRest();
+});
+
+var require$3 = module$1.createRequire(url); // https://github.com/npm/node-semver#readme
+
+
+var _require = require$3("semver"),
+    versionGreaterThan = _require.gt,
+    versionToPrerelease = _require.prerelease;
+
+var PUBLISH_BECAUSE_NEVER_PUBLISHED = "never-published";
+var PUBLISH_BECAUSE_LATEST_LOWER = "latest-lower";
+var PUBLISH_BECAUSE_TAG_DIFFERS = "tag-differs";
+var NOTHING_BECAUSE_LATEST_HIGHER = "latest-higher";
+var NOTHING_BECAUSE_ALREADY_PUBLISHED = "already-published";
+var needsPublish = function needsPublish(_ref) {
+  var registryLatestVersion = _ref.registryLatestVersion,
+      packageVersion = _ref.packageVersion;
+
+  if (registryLatestVersion === null) {
+    return PUBLISH_BECAUSE_NEVER_PUBLISHED;
+  }
+
+  if (registryLatestVersion === packageVersion) {
+    return NOTHING_BECAUSE_ALREADY_PUBLISHED;
+  }
+
+  if (versionGreaterThan(registryLatestVersion, packageVersion)) {
+    return NOTHING_BECAUSE_LATEST_HIGHER;
+  }
+
+  var registryLatestVersionPrerelease = versionToPrerelease(registryLatestVersion);
+  var packageVersionPrerelease = versionToPrerelease(packageVersion);
+
+  if (registryLatestVersionPrerelease === null && packageVersionPrerelease === null) {
+    return PUBLISH_BECAUSE_LATEST_LOWER;
+  }
+
+  if (registryLatestVersionPrerelease === null && packageVersionPrerelease !== null) {
+    return PUBLISH_BECAUSE_LATEST_LOWER;
+  }
+
+  if (registryLatestVersionPrerelease !== null && packageVersionPrerelease === null) {
+    return PUBLISH_BECAUSE_LATEST_LOWER;
+  }
+
+  var _registryLatestVersio = _slicedToArray(registryLatestVersionPrerelease, 2),
+      registryReleaseTag = _registryLatestVersio[0],
+      registryPrereleaseVersion = _registryLatestVersio[1];
+
+  var _packageVersionPrerel = _slicedToArray(packageVersionPrerelease, 2),
+      packageReleaseTag = _packageVersionPrerel[0],
+      packagePreReleaseVersion = _packageVersionPrerel[1];
+
+  if (registryReleaseTag !== packageReleaseTag) {
+    return PUBLISH_BECAUSE_TAG_DIFFERS;
+  }
+
+  if (registryPrereleaseVersion === packagePreReleaseVersion) {
+    return NOTHING_BECAUSE_ALREADY_PUBLISHED;
+  }
+
+  if (registryPrereleaseVersion > packagePreReleaseVersion) {
+    return NOTHING_BECAUSE_LATEST_HIGHER;
+  }
+
+  return PUBLISH_BECAUSE_LATEST_LOWER;
+};
+
 function _await$9(value, then, direct) {
   if (direct) {
     return then ? then(value) : value;
@@ -1869,9 +1993,6 @@ function _await$9(value, then, direct) {
 
   return then ? value.then(then) : value;
 }
-
-var require$3 = module$1.createRequire(url); // https://github.com/npm/node-semver#readme
-
 
 function _async$c(f) {
   return function () {
@@ -1886,9 +2007,6 @@ function _async$c(f) {
     }
   };
 }
-
-var _require = require$3("semver"),
-    versionGreaterThan = _require.gt;
 
 function _catch$6(body, recover) {
   try {
@@ -1950,12 +2068,6 @@ var publishPackage = _async$c(function () {
       report[registryUrl] = registryReport;
       logger.debug("check latest version for ".concat(packageName, " in ").concat(registryUrl));
       var registryConfig = registriesConfig[registryUrl];
-
-      var decide = function decide(action, actionReason) {
-        registryReport.action = action;
-        registryReport.actionReason = actionReason;
-      };
-
       return _continueIgnored(_catch$6(function () {
         return _await$9(fetchLatestInRegistry(_objectSpread({
           registryUrl: registryUrl,
@@ -1963,24 +2075,33 @@ var publishPackage = _async$c(function () {
         }, registryConfig)), function (latestPackageInRegistry) {
           var registryLatestVersion = latestPackageInRegistry === null ? null : latestPackageInRegistry.version;
           registryReport.registryLatestVersion = registryLatestVersion;
+          var needs = needsPublish({
+            packageVersion: packageVersion,
+            registryLatestVersion: registryLatestVersion
+          });
+          registryReport.actionReason = needs;
 
-          if (registryLatestVersion === null) {
-            logger.debug("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because it was never published"));
-            decide("needs-publish", "never-published");
-          } else if (registryLatestVersion === packageVersion) {
+          if (needs === PUBLISH_BECAUSE_NEVER_PUBLISHED) {
+            logger.info("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because it was never published"));
+            registryReport.action = "publish";
+          } else if (needs === PUBLISH_BECAUSE_LATEST_LOWER) {
+            logger.info("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because latest version is lower (").concat(registryLatestVersion, ")"));
+            registryReport.action = "publish";
+          } else if (needs === PUBLISH_BECAUSE_TAG_DIFFERS) {
+            logger.info("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because latest tag differs (").concat(registryLatestVersion, ")"));
+            registryReport.action = "publish";
+          } else if (needs === NOTHING_BECAUSE_ALREADY_PUBLISHED) {
             logger.info("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " because already published"));
-            decide("nothing", "already-published");
-          } else if (versionGreaterThan(registryLatestVersion, packageVersion)) {
+            registryReport.action = "nothing";
+          } else if (needs === NOTHING_BECAUSE_LATEST_HIGHER) {
             logger.info("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " because latest version is higher (").concat(registryLatestVersion, ")"));
-            decide("nothing", "latest-higher");
-          } else {
-            logger.debug("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because latest version is lower (").concat(registryLatestVersion, ")"));
-            decide("needs-publish", "latest-lower");
+            registryReport.action = "nothing";
           }
         });
       }, function (e) {
         logger.error(e.message);
-        decide("nothing", e);
+        registryReport.action = "nothing";
+        registryReport.actionReason = e;
         process.exitCode = 1;
       }));
     }))), function () {
@@ -1990,7 +2111,7 @@ var publishPackage = _async$c(function () {
         return _await$9(previous, function () {
           var registryReport = report[registryUrl];
 
-          if (registryReport.action !== "needs-publish") {
+          if (registryReport.action !== "publish") {
             registryReport.actionResult = {
               success: true,
               reason: "nothing-to-do"

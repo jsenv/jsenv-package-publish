@@ -119,7 +119,7 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
       packageName,
       packageVersion,
       registryLatestVersion: latestVersionOnGithub,
-      action: "needs-publish",
+      action: "publish",
       actionReason: "latest-lower",
       actionResult: {
         success: true,
