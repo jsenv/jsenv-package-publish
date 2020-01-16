@@ -16,7 +16,6 @@ export const loadEnvFile = async (url) => {
       throw new Error(`missing env file at ${urlToFileSystemPath(url)}`)
     }
 
-    // stuff about extension
     if (e.code === "ERR_UNKNOWN_FILE_EXTENSION" && url.endsWith(".json")) {
       console.error(`cannot import ${url} because json is not supported.
 enabled them with --experimental-json-modules flag.
