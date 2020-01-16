@@ -43,8 +43,8 @@
   },
   "dependencies": {
     "@jsenv/logger": "3.3.0",
+    "@jsenv/server": "1.4.0",
     "@jsenv/util": "3.3.0",
-    "node-fetch": "2.6.0",
     "semver": "7.1.1"
   },
   "devDependencies": {
