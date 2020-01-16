@@ -72,6 +72,8 @@ export const publish = async ({
                   reason: "publish-conflict",
                 })
               } else {
+                // ambiguous package version in package.json might be returned
+                // for github registry (whenever trying to override an existing version)
                 reject(error)
               }
             } else {

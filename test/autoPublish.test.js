@@ -1,3 +1,14 @@
+/**
+ * If you just runned npm publish for 6.0.0
+ * fetchLatestInRegistry might return 5.0.0 because
+ * npm is not done handling the package you just published
+ *
+ * It means this test can fail if runned once and an other time shortly after.
+ * on npm it should be handled by EPUBLISHCONFLICT
+ * but on github the error says ambiguous version in package.json
+ *
+ */
+
 import { createRequire } from "module"
 import { assert } from "@jsenv/assert"
 import { ensureEmptyDirectory, resolveUrl, writeFile } from "@jsenv/util"
@@ -18,14 +29,6 @@ assertProcessEnvShape({
 
 const tempDirectoryUrl = resolveUrl("./temp/", import.meta.url)
 const packageName = "@jsenv/package-publish-test"
-// const fetchLatestVersionOnNpm = async () => {
-//   const { version } = await fetchLatestInRegistry({
-//     registryUrl: "https://registry.npmjs.org",
-//     packageName,
-//     token: process.env.NPM_TOKEN,
-//   })
-//   return version
-// }
 const fetchLatestVersionOnGithub = async () => {
   const { version } = await fetchLatestInRegistry({
     registryUrl: "https://npm.pkg.github.com",
@@ -156,6 +159,3 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
   assert({ actual, expected })
   latestVersionOnGithub = packageVersion
 }
-
-// TODO: test with npmrc presence or not
-// test with package publishConfig.registry presence or not
