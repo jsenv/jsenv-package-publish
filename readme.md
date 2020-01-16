@@ -33,7 +33,7 @@ This package uses itself and is configured in the repository workflow file.<br /
 # Installation
 
 ```console
-npm install --save-dev @jsenv/package-publish@1.2.0
+npm install --save-dev @jsenv/package-publish@1.3.0
 ```
 
 # Documentation
