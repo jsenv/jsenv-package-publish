@@ -58,7 +58,6 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
     }),
   )
 
-  // it should not throw but it should not publish a new package either
   const actual = await publishPackage({
     projectDirectoryUrl: tempDirectoryUrl,
     logLevel: "debug",
