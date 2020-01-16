@@ -63,17 +63,25 @@ export const publish = async ({
           },
           (error) => {
             if (error) {
+              // publish conflict generally occurs because servers
+              // returns 200 after npm publish
+              // but returns previous version if asked immediatly
+              // after for the last published version.
+
+              // npm publish conclit
               if (error.message.includes("EPUBLISHCONFLICT")) {
-                // it certainly means a previous published worked
-                // but registry is still busy so when we asked
-                // for latest version is was not yet available
                 resolve({
                   success: true,
-                  reason: "publish-conflict",
+                  reason: "published",
+                })
+              }
+              // github publish conflict
+              else if (error.message.includes("ambiguous package version in package.json")) {
+                resolve({
+                  success: true,
+                  reason: "published",
                 })
               } else {
-                // ambiguous package version in package.json might be returned
-                // for github registry (whenever trying to override an existing version)
                 reject(error)
               }
             } else {

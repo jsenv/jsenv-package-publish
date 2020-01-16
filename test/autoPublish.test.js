@@ -23,7 +23,6 @@ if (!process.env.CI) {
   await loadEnvFile(resolveUrl("../secrets.json", import.meta.url))
 }
 assertProcessEnvShape({
-  NPM_TOKEN: true,
   GITHUB_TOKEN: true,
 })
 
@@ -39,7 +38,7 @@ const fetchLatestVersionOnGithub = async () => {
 }
 let latestVersionOnGithub = await fetchLatestVersionOnGithub()
 
-// try to publish the same version on github and npm
+// try to publish existing version on github
 {
   await ensureEmptyDirectory(tempDirectoryUrl)
   const packageFileUrl = resolveUrl("package.json", tempDirectoryUrl)
@@ -67,9 +66,6 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
       "https://npm.pkg.github.com": {
         token: process.env.GITHUB_TOKEN,
       },
-      "https://registry.npmjs.org": {
-        token: process.env.NPM_TOKEN,
-      },
     },
   })
   const expected = {
@@ -84,22 +80,11 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
         reason: "nothing-to-do",
       },
     },
-    "https://registry.npmjs.org": {
-      packageName,
-      packageVersion,
-      registryLatestVersion: latestVersionOnGithub,
-      action: "nothing",
-      actionReason: "already-published",
-      actionResult: {
-        success: true,
-        reason: "nothing-to-do",
-      },
-    },
   }
   assert({ actual, expected })
 }
 
-// publish new minor on github and npm
+// publish new minor on github
 {
   await ensureEmptyDirectory(tempDirectoryUrl)
   const packageFileUrl = resolveUrl("package.json", tempDirectoryUrl)
@@ -127,24 +112,10 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
       "https://npm.pkg.github.com": {
         token: process.env.GITHUB_TOKEN,
       },
-      "https://registry.npmjs.org": {
-        token: process.env.NPM_TOKEN,
-      },
     },
   })
   const expected = {
     "https://npm.pkg.github.com": {
-      packageName,
-      packageVersion,
-      registryLatestVersion: latestVersionOnGithub,
-      action: "needs-publish",
-      actionReason: "latest-lower",
-      actionResult: {
-        success: true,
-        reason: "published",
-      },
-    },
-    "https://registry.npmjs.org": {
       packageName,
       packageVersion,
       registryLatestVersion: latestVersionOnGithub,
