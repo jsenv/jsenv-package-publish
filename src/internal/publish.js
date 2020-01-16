@@ -1,89 +1,120 @@
-import { readFileSync, writeFileSync } from "fs"
 import { exec } from "child_process"
-import { resolveUrl, urlToFilePath } from "@jsenv/util"
+import { resolveUrl, urlToFileSystemPath, readFile, writeFile } from "@jsenv/util"
 import { setNpmConfig } from "./setNpmConfig.js"
 
-export const publish = async ({ logger, projectDirectoryUrl, registryUrl, token }) => {
-  const previousValue = process.env.NODE_AUTH_TOKEN
-  const restoreProcessEnv = () => {
-    process.env.NODE_AUTH_TOKEN = previousValue
-  }
-
-  const projectPackageFileUrl = resolveUrl("./package.json", projectDirectoryUrl)
-  const projectPackageFilePath = urlToFilePath(projectPackageFileUrl)
-
-  const projectPackageString = String(readFileSync(projectPackageFilePath))
-  const restoreProjectPackageFile = () => {
-    writeFileSync(projectPackageFilePath, projectPackageString)
-  }
-
-  const projectNpmConfigFileUrl = resolveUrl("./.npmrc", projectDirectoryUrl)
-  const projectNpmConfigFilePath = urlToFilePath(projectNpmConfigFileUrl)
-  let projectNpmConfigString
+export const publish = async ({
+  logger,
+  logNpmPublishOutput,
+  projectDirectoryUrl,
+  registryUrl,
+  token,
+}) => {
   try {
-    projectNpmConfigString = String(readFileSync(projectNpmConfigFilePath))
-  } catch (e) {
-    if (e.code === "ENOENT") {
-      projectNpmConfigString = ""
-    } else {
-      throw e
+    const promises = []
+
+    const previousValue = process.env.NODE_AUTH_TOKEN
+    const restoreProcessEnv = () => {
+      process.env.NODE_AUTH_TOKEN = previousValue
     }
-  }
-  const restoreProjectNpmConfigFile = () => {
-    writeFileSync(projectNpmConfigFilePath, projectNpmConfigString)
-  }
+    process.env.NODE_AUTH_TOKEN = token
 
-  process.env.NODE_AUTH_TOKEN = token
+    const projectPackageFileUrl = resolveUrl("./package.json", projectDirectoryUrl)
+    const projectPackageString = await readFile(projectPackageFileUrl)
+    const restoreProjectPackageFile = () => writeFile(projectPackageFileUrl, projectPackageString)
+    const projectPackageObject = JSON.parse(projectPackageString)
+    projectPackageObject.publishConfig = projectPackageObject.publishConfig || {}
+    projectPackageObject.publishConfig.registry = registryUrl
+    promises.push(
+      writeFile(projectPackageFileUrl, JSON.stringify(projectPackageObject, null, "  ")),
+    )
 
-  const projectPackageObject = JSON.parse(projectPackageString)
-  projectPackageObject.publishConfig = projectPackageObject.publishConfig || {}
-  projectPackageObject.publishConfig.registry = registryUrl
-  writeFileSync(projectPackageFilePath, JSON.stringify(projectPackageObject, null, "  "))
+    const projectNpmConfigFileUrl = resolveUrl("./.npmrc", projectDirectoryUrl)
+    let projectNpmConfigString
+    try {
+      projectNpmConfigString = await readFile(projectNpmConfigFileUrl)
+    } catch (e) {
+      if (e.code === "ENOENT") {
+        projectNpmConfigString = ""
+      } else {
+        throw e
+      }
+    }
+    const restoreProjectNpmConfigFile = () =>
+      writeFile(projectNpmConfigFileUrl, projectNpmConfigString)
+    promises.push(
+      writeFile(
+        projectNpmConfigFileUrl,
+        setNpmConfig(projectNpmConfigString, {
+          [computeRegistryTokenKey(registryUrl)]: token,
+          [computeRegistryKey(projectPackageObject.name)]: registryUrl,
+        }),
+      ),
+    )
 
-  writeFileSync(
-    projectNpmConfigFilePath,
-    setNpmConfig(projectNpmConfigString, {
-      [computeRegistryTokenKey(registryUrl)]: token,
-      [computeRegistryKey(projectPackageObject.name)]: registryUrl,
-    }),
-  )
+    await Promise.all(promises)
 
-  try {
-    await new Promise((resolve, reject) => {
-      const command = exec(
-        "npm publish",
-        {
-          cwd: urlToFilePath(projectDirectoryUrl),
-          stdio: "silent",
-        },
-        (error) => {
-          if (error) {
-            if (error.message.includes("EPUBLISHCONFLICT")) {
-              // it certainly means a previous published worked
-              // but registry is still busy so when we asked
-              // for latest version is was not yet available
-              resolve()
+    try {
+      return await new Promise((resolve, reject) => {
+        const command = exec(
+          "npm publish",
+          {
+            cwd: urlToFileSystemPath(projectDirectoryUrl),
+            stdio: "silent",
+          },
+          (error) => {
+            if (error) {
+              // publish conflict generally occurs because servers
+              // returns 200 after npm publish
+              // but returns previous version if asked immediatly
+              // after for the last published version.
+
+              // npm publish conclit
+              if (error.message.includes("EPUBLISHCONFLICT")) {
+                resolve({
+                  success: true,
+                  reason: "published",
+                })
+              }
+              // github publish conflict
+              else if (error.message.includes("ambiguous package version in package.json")) {
+                resolve({
+                  success: true,
+                  reason: "published",
+                })
+              } else {
+                reject(error)
+              }
             } else {
-              reject(error)
+              resolve({
+                success: true,
+                reason: "published",
+              })
             }
-          } else {
-            resolve()
-          }
-        },
-      )
-      command.stdout.on("data", (data) => {
-        logger.debug(data)
+          },
+        )
+        if (logNpmPublishOutput) {
+          command.stdout.on("data", (data) => {
+            logger.debug(data)
+          })
+          command.stderr.on("data", (data) => {
+            // debug because this output is part of
+            // the error message generated by a failing npm publish
+            logger.debug(data)
+          })
+        }
       })
-      command.stderr.on("data", (data) => {
-        // debug because this output is part of
-        // the error message generated by a failing npm publish
-        logger.debug(data)
-      })
-    })
-  } finally {
-    restoreProcessEnv()
-    restoreProjectPackageFile()
-    restoreProjectNpmConfigFile()
+    } finally {
+      await Promise.all([
+        restoreProcessEnv(),
+        restoreProjectPackageFile(),
+        restoreProjectNpmConfigFile(),
+      ])
+    }
+  } catch (e) {
+    return {
+      success: false,
+      reason: e,
+    }
   }
 }
 
