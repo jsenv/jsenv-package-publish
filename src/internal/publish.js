@@ -72,14 +72,21 @@ export const publish = async ({
               if (error.message.includes("EPUBLISHCONFLICT")) {
                 resolve({
                   success: true,
-                  reason: "published",
+                  reason: "already-published",
+                })
+              } else if (
+                error.message.includes("You cannot publish over the previously published versions")
+              ) {
+                resolve({
+                  success: true,
+                  reason: "already-published",
                 })
               }
               // github publish conflict
               else if (error.message.includes("ambiguous package version in package.json")) {
                 resolve({
                   success: true,
-                  reason: "published",
+                  reason: "already-published",
                 })
               } else {
                 reject(error)

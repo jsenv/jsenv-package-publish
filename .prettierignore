@@ -1,6 +1,7 @@
 /.jsenv/
 /coverage/
 /dist/
+/test/**/temp/
 /node_modules/
 /package.json
 /package-lock.json
