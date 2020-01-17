@@ -122,7 +122,7 @@ let latestVersionOnGithub = await fetchLatestVersionOnGithub()
       actionReason: "latest-lower",
       actionResult: {
         success: true,
-        reason: "published",
+        reason: actual["https://npm.pkg.github.com"].actionResult.reason,
       },
     },
   }

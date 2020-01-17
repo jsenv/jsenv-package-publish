@@ -34,7 +34,7 @@ export const publishPackage = async ({
     projectDirectoryUrl,
   })
   const { name: packageName, version: packageVersion } = packageInProject
-  logger.debug(`${packageName}@${packageVersion} found in package.json`)
+  logger.info(`${packageName}@${packageVersion} found in package.json`)
 
   const report = {}
   await Promise.all(
@@ -63,36 +63,14 @@ export const publishPackage = async ({
         registryReport.registryLatestVersion = registryLatestVersion
 
         const needs = needsPublish({ packageVersion, registryLatestVersion })
+        registryReport.action =
+          needs === PUBLISH_BECAUSE_NEVER_PUBLISHED ||
+          needs === PUBLISH_BECAUSE_LATEST_LOWER ||
+          needs === PUBLISH_BECAUSE_TAG_DIFFERS
+            ? "publish"
+            : "nothing"
         registryReport.actionReason = needs
-
-        if (needs === PUBLISH_BECAUSE_NEVER_PUBLISHED) {
-          logger.info(
-            `${packageName}@${packageVersion} needs to be published on ${registryUrl} because it was never published`,
-          )
-          registryReport.action = "publish"
-        } else if (needs === PUBLISH_BECAUSE_LATEST_LOWER) {
-          logger.info(
-            `${packageName}@${packageVersion} needs to be published on ${registryUrl} because latest version is lower (${registryLatestVersion})`,
-          )
-          registryReport.action = "publish"
-        } else if (needs === PUBLISH_BECAUSE_TAG_DIFFERS) {
-          logger.info(
-            `${packageName}@${packageVersion} needs to be published on ${registryUrl} because latest tag differs (${registryLatestVersion})`,
-          )
-          registryReport.action = "publish"
-        } else if (needs === NOTHING_BECAUSE_ALREADY_PUBLISHED) {
-          logger.info(
-            `skip ${packageName}@${packageVersion} publish on ${registryUrl} because already published`,
-          )
-          registryReport.action = "nothing"
-        } else if (needs === NOTHING_BECAUSE_LATEST_HIGHER) {
-          logger.info(
-            `skip ${packageName}@${packageVersion} publish on ${registryUrl} because latest version is higher (${registryLatestVersion})`,
-          )
-          registryReport.action = "nothing"
-        }
       } catch (e) {
-        logger.error(e.message)
         registryReport.action = "nothing"
         registryReport.actionReason = e
         process.exitCode = 1
@@ -106,12 +84,41 @@ export const publishPackage = async ({
     await previous
 
     const registryReport = report[registryUrl]
-    if (registryReport.action !== "publish") {
+    const { action, actionReason, registryLatestVersion } = registryReport
+
+    if (action === "nothing") {
+      if (actionReason === NOTHING_BECAUSE_ALREADY_PUBLISHED) {
+        logger.info(
+          `skip ${packageName}@${packageVersion} publish on ${registryUrl} because already published`,
+        )
+      } else if (actionReason === NOTHING_BECAUSE_LATEST_HIGHER) {
+        logger.info(
+          `skip ${packageName}@${packageVersion} publish on ${registryUrl} because latest version is higher (${registryLatestVersion})`,
+        )
+      } else {
+        logger.error(`skip ${packageName}@${packageVersion} publish on ${registryUrl} due to error while fetching latest version.
+--- error stack ---
+${actionReason.stack}`)
+      }
+
       registryReport.actionResult = { success: true, reason: "nothing-to-do" }
       return
     }
 
-    logger.info(`publishing ${packageName}@${packageVersion} on ${registryUrl}`)
+    if (actionReason === PUBLISH_BECAUSE_NEVER_PUBLISHED) {
+      logger.info(
+        `publish ${packageName}@${packageVersion} on ${registryUrl} because it was never published`,
+      )
+    } else if (actionReason === PUBLISH_BECAUSE_LATEST_LOWER) {
+      logger.info(
+        `publish ${packageName}@${packageVersion} on ${registryUrl} because latest version is lower (${registryLatestVersion})`,
+      )
+    } else if (actionReason === PUBLISH_BECAUSE_TAG_DIFFERS) {
+      logger.info(
+        `publish ${packageName}@${packageVersion} on ${registryUrl} because latest tag differs (${registryLatestVersion})`,
+      )
+    }
+
     const { success, reason } = await publish({
       logger,
       logNpmPublishOutput,
@@ -121,7 +128,11 @@ export const publishPackage = async ({
     })
     registryReport.actionResult = { success, reason }
     if (success) {
-      logger.info(`${packageName}@${packageVersion} published on ${registryUrl}`)
+      if (reason === "already-published") {
+        logger.info(`${packageName}@${packageVersion} was already published on ${registryUrl}`)
+      } else {
+        logger.info(`${packageName}@${packageVersion} published on ${registryUrl}`)
+      }
     } else {
       logger.error(`error when publishing ${packageName}@${packageVersion} in ${registryUrl}
 --- error stack ---
