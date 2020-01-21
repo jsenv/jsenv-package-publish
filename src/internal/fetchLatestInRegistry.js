@@ -7,7 +7,6 @@ import { fetchUrl } from "@jsenv/server"
 export const fetchLatestInRegistry = async ({ registryUrl, packageName, token }) => {
   const requestUrl = `${registryUrl}/${packageName}`
   const response = await fetchUrl(requestUrl, {
-    standard: true,
     headers: {
       // "user-agent": "jsenv",
       accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*",

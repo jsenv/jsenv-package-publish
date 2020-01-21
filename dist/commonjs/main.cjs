@@ -1023,7 +1023,7 @@ var createOperation = function createOperation(_ref) {
 
 var jsenvContentTypeMap = {
   "application/javascript": {
-    extensions: ["js", "mjs", "ts", "jsx"]
+    extensions: ["js", "cjs", "mjs", "ts", "jsx"]
   },
   "application/json": {
     extensions: ["json"]
@@ -1402,12 +1402,12 @@ var fetchUrl = _async$8(function (url) {
 
   var _ref$cancellationToke = _ref.cancellationToken,
       cancellationToken = _ref$cancellationToke === void 0 ? createCancellationToken() : _ref$cancellationToke,
-      _ref$standard = _ref.standard,
-      standard = _ref$standard === void 0 ? false : _ref$standard,
+      _ref$simplified = _ref.simplified,
+      simplified = _ref$simplified === void 0 ? false : _ref$simplified,
       canReadDirectory = _ref.canReadDirectory,
       contentTypeMap = _ref.contentTypeMap,
       cacheStrategy = _ref.cacheStrategy,
-      options = _objectWithoutProperties(_ref, ["cancellationToken", "standard", "canReadDirectory", "contentTypeMap", "cacheStrategy"]);
+      options = _objectWithoutProperties(_ref, ["cancellationToken", "simplified", "canReadDirectory", "contentTypeMap", "cacheStrategy"]);
 
   try {
     url = String(new URL(url));
@@ -1434,7 +1434,7 @@ var fetchUrl = _async$8(function (url) {
           headers: headers
         });
         _exit = true;
-        return standard ? response : standardResponseToSimplifiedResponse(response);
+        return simplified ? standardResponseToSimplifiedResponse(response) : response;
       });
     }
   }, function (_result) {
@@ -1446,7 +1446,7 @@ var fetchUrl = _async$8(function (url) {
         }, options));
       }
     }), function (response) {
-      return standard ? response : standardResponseToSimplifiedResponse(response);
+      return simplified ? standardResponseToSimplifiedResponse(response) : response;
     });
   });
 }); // https://github.com/bitinn/node-fetch#request-cancellation-with-abortsignal
@@ -1525,7 +1525,6 @@ var fetchLatestInRegistry = _async$9(function (_ref) {
       token = _ref.token;
   var requestUrl = "".concat(registryUrl, "/").concat(packageName);
   return _await$6(fetchUrl(requestUrl, {
-    standard: true,
     headers: _objectSpread({
       // "user-agent": "jsenv",
       accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"
@@ -1716,13 +1715,18 @@ var publish = _async$a(function (_ref) {
                   if (error.message.includes("EPUBLISHCONFLICT")) {
                     resolve({
                       success: true,
-                      reason: "published"
+                      reason: "already-published"
+                    });
+                  } else if (error.message.includes("You cannot publish over the previously published versions")) {
+                    resolve({
+                      success: true,
+                      reason: "already-published"
                     });
                   } // github publish conflict
                   else if (error.message.includes("ambiguous package version in package.json")) {
                       resolve({
                         success: true,
-                        reason: "published"
+                        reason: "already-published"
                       });
                     } else {
                       reject(error);
@@ -2054,7 +2058,7 @@ var publishPackage = _async$c(function () {
   }), function (packageInProject) {
     var packageName = packageInProject.name,
         packageVersion = packageInProject.version;
-    logger.debug("".concat(packageName, "@").concat(packageVersion, " found in package.json"));
+    logger.info("".concat(packageName, "@").concat(packageVersion, " found in package.json"));
     var report = {};
     return _await$9(Promise.all(Object.keys(registriesConfig).map(_async$c(function (registryUrl) {
       var registryReport = {
@@ -2079,27 +2083,10 @@ var publishPackage = _async$c(function () {
             packageVersion: packageVersion,
             registryLatestVersion: registryLatestVersion
           });
+          registryReport.action = needs === PUBLISH_BECAUSE_NEVER_PUBLISHED || needs === PUBLISH_BECAUSE_LATEST_LOWER || needs === PUBLISH_BECAUSE_TAG_DIFFERS ? "publish" : "nothing";
           registryReport.actionReason = needs;
-
-          if (needs === PUBLISH_BECAUSE_NEVER_PUBLISHED) {
-            logger.info("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because it was never published"));
-            registryReport.action = "publish";
-          } else if (needs === PUBLISH_BECAUSE_LATEST_LOWER) {
-            logger.info("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because latest version is lower (").concat(registryLatestVersion, ")"));
-            registryReport.action = "publish";
-          } else if (needs === PUBLISH_BECAUSE_TAG_DIFFERS) {
-            logger.info("".concat(packageName, "@").concat(packageVersion, " needs to be published on ").concat(registryUrl, " because latest tag differs (").concat(registryLatestVersion, ")"));
-            registryReport.action = "publish";
-          } else if (needs === NOTHING_BECAUSE_ALREADY_PUBLISHED) {
-            logger.info("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " because already published"));
-            registryReport.action = "nothing";
-          } else if (needs === NOTHING_BECAUSE_LATEST_HIGHER) {
-            logger.info("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " because latest version is higher (").concat(registryLatestVersion, ")"));
-            registryReport.action = "nothing";
-          }
         });
       }, function (e) {
-        logger.error(e.message);
         registryReport.action = "nothing";
         registryReport.actionReason = e;
         process.exitCode = 1;
@@ -2110,8 +2097,19 @@ var publishPackage = _async$c(function () {
       return _await$9(Object.keys(report).reduce(function (previous, registryUrl) {
         return _await$9(previous, function () {
           var registryReport = report[registryUrl];
+          var action = registryReport.action,
+              actionReason = registryReport.actionReason,
+              registryLatestVersion = registryReport.registryLatestVersion;
 
-          if (registryReport.action !== "publish") {
+          if (action === "nothing") {
+            if (actionReason === NOTHING_BECAUSE_ALREADY_PUBLISHED) {
+              logger.info("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " because already published"));
+            } else if (actionReason === NOTHING_BECAUSE_LATEST_HIGHER) {
+              logger.info("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " because latest version is higher (").concat(registryLatestVersion, ")"));
+            } else {
+              logger.error("skip ".concat(packageName, "@").concat(packageVersion, " publish on ").concat(registryUrl, " due to error while fetching latest version.\n--- error stack ---\n").concat(actionReason.stack));
+            }
+
             registryReport.actionResult = {
               success: true,
               reason: "nothing-to-do"
@@ -2119,7 +2117,14 @@ var publishPackage = _async$c(function () {
             return;
           }
 
-          logger.info("publishing ".concat(packageName, "@").concat(packageVersion, " on ").concat(registryUrl));
+          if (actionReason === PUBLISH_BECAUSE_NEVER_PUBLISHED) {
+            logger.info("publish ".concat(packageName, "@").concat(packageVersion, " on ").concat(registryUrl, " because it was never published"));
+          } else if (actionReason === PUBLISH_BECAUSE_LATEST_LOWER) {
+            logger.info("publish ".concat(packageName, "@").concat(packageVersion, " on ").concat(registryUrl, " because latest version is lower (").concat(registryLatestVersion, ")"));
+          } else if (actionReason === PUBLISH_BECAUSE_TAG_DIFFERS) {
+            logger.info("publish ".concat(packageName, "@").concat(packageVersion, " on ").concat(registryUrl, " because latest tag differs (").concat(registryLatestVersion, ")"));
+          }
+
           return _await$9(publish(_objectSpread({
             logger: logger,
             logNpmPublishOutput: logNpmPublishOutput,
@@ -2134,7 +2139,11 @@ var publishPackage = _async$c(function () {
             };
 
             if (success) {
-              logger.info("".concat(packageName, "@").concat(packageVersion, " published on ").concat(registryUrl));
+              if (reason === "already-published") {
+                logger.info("".concat(packageName, "@").concat(packageVersion, " was already published on ").concat(registryUrl));
+              } else {
+                logger.info("".concat(packageName, "@").concat(packageVersion, " published on ").concat(registryUrl));
+              }
             } else {
               logger.error("error when publishing ".concat(packageName, "@").concat(packageVersion, " in ").concat(registryUrl, "\n--- error stack ---\n").concat(reason.stack));
               process.exitCode = 1;
@@ -2171,4 +2180,4 @@ var assertRegistriesConfig = function assertRegistriesConfig(value) {
 };
 
 exports.publishPackage = publishPackage;
-//# sourceMappingURL=main.js.map
+//# sourceMappingURL=main.cjs.map
