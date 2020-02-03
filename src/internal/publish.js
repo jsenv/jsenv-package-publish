@@ -74,6 +74,11 @@ export const publish = async ({
                   success: true,
                   reason: "already-published",
                 })
+              } else if (error.message.includes("Cannot publish over existing version")) {
+                resolve({
+                  success: true,
+                  reason: "already-published",
+                })
               } else if (
                 error.message.includes("You cannot publish over the previously published versions")
               ) {
