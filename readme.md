@@ -12,10 +12,7 @@ Publish package to one or many registry.
 - [Presentation](#Presentation)
 - [Installation](#installation)
 - [Documentation](#Documentation)
-  - [publishPackage](#publishPackage)
-    - [projectDirectoryUrl](#projectDirectoryUrl)
-    - [registriesConfig](#registriesConfig)
-    - [logLevel](#logLevel)
+- [publishPackage](#publishPackage)
 
 # Presentation
 
@@ -33,14 +30,12 @@ This package uses itself and is configured in the repository workflow file.<br /
 # Installation
 
 ```console
-npm install --save-dev @jsenv/package-publish@1.5.0
+npm install --save-dev @jsenv/package-publish
 ```
 
 # Documentation
 
 The api consist into one function called `publishPackage`.
-
-## publishPackage
 
 `publishPackage` is an async function publishing a package on one or many registries.
 
