@@ -1,3 +1,5 @@
-const { pathToFileURL } = require("url")
+import { getBabelPluginMapForNode } from "@jsenv/core"
 
-exports.projectDirectoryUrl = `${String(pathToFileURL(__dirname))}/`
+export const projectDirectoryUrl = String(new URL("./", import.meta.url))
+
+export const babelPluginMap = getBabelPluginMapForNode()
